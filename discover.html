@@ -307,98 +307,107 @@ async function loadProfiles(){
 
     profiles.forEach(profile => {
 
-      const card = document.createElement("div");
-      card.className = "card";
+  const card = document.createElement("div");
+  card.className = "card";
 
-      const photoHtml = profile.photo_url
-        ? `
-          <img
-            class="photo"
-            src="${escapeHtml(profile.photo_url)}"
-            alt="${escapeHtml(profile.display_name || "Member")}"
-          >
-        `
-        : `
-          <div class="no-photo">
-            PRIVATE MEMBER
-          </div>
-        `;
-const incomeLabels = {
-  "50k-99k": "Verified Income — $50K–$99K",
-  "100k-249k": "Verified Income — Six-Figure Earner",
-  "250k-499k": "Verified Income — High Earner",
-  "500k+": "Verified Income — $500K+"
-};
+  const photoHtml = profile.photo_url
+    ? `
+      <img
+        class="photo"
+        src="${escapeHtml(profile.photo_url)}"
+        alt="${escapeHtml(profile.display_name || "Member")}"
+      >
+    `
+    : `
+      <div class="no-photo">
+        PRIVATE MEMBER
+      </div>
+    `;
 
-const netWorthLabels = {
-  "under-1m": "Verified Net Worth — Under $1M",
-  "1m-5m": "Verified Net Worth — Millionaire",
-  "5m-10m": "Verified Net Worth — Multi-Millionaire",
-  "10m+": "Verified Net Worth — $10M+"
-};
+  const incomeLabels = {
+    "50k-99k": "Verified Income — $50K–$99K",
+    "100k-249k": "Verified Income — Six-Figure Earner",
+    "250k-499k": "Verified Income — High Earner",
+    "500k+": "Verified Income — $500K+"
+  };
 
-const verificationHtml = `
-  <div class="tags">
-    ${
-      profile.selfie_verified
-        ? `<span class="tag">✓ Selfie Verified</span>`
-        : ""
-    }
+  const netWorthLabels = {
+    "under-1m": "Verified Net Worth — Under $1M",
+    "1m-5m": "Verified Net Worth — Millionaire",
+    "5m-10m": "Verified Net Worth — Multi-Millionaire",
+    "10m+": "Verified Net Worth — $10M+"
+  };
 
-    ${
-      profile.income_verified && profile.income_tier
-        ? `<span class="tag">💰 ${escapeHtml(incomeLabels[profile.income_tier] || "Income Verified")}</span>`
-        : ""
-    }
+  const verificationHtml = `
+    <div class="tags">
 
-    ${
-      profile.net_worth_verified && profile.net_worth_tier
-        ? `<span class="tag">💎 ${escapeHtml(netWorthLabels[profile.net_worth_tier] || "Net Worth Verified")}</span>`
-        : ""
-    }
-  </div>
-`;
-      card.innerHTML = `
-        ${photoHtml}
+      ${
+        profile.selfie_verified
+          ? `<span class="tag">✓ Selfie Verified</span>`
+          : ""
+      }
 
-        <div class="card-body">
+      ${
+        profile.income_verified && profile.income_tier
+          ? `<span class="tag">💰 ${escapeHtml(
+              incomeLabels[profile.income_tier] || "Income Verified"
+            )}</span>`
+          : ""
+      }
 
-          <h2 class="name">
-            ${escapeHtml(profile.display_name || "Member")}
-            ${profile.age ? ", " + escapeHtml(profile.age) : ""}
-          </h2>
+      ${
+        profile.net_worth_verified && profile.net_worth_tier
+          ? `<span class="tag">💎 ${escapeHtml(
+              netWorthLabels[profile.net_worth_tier] || "Net Worth Verified"
+            )}</span>`
+          : ""
+      }
 
-          <div class="location">
-            ${escapeHtml(profile.city || "Location private")}
-          </div>
-${verificationHtml}
-          <div class="tags">
+    </div>
+  `;
 
-            ${
-              profile.role
-              ? `<span class="tag">${escapeHtml(profile.role)}</span>`
-              : ""
-            }
+  card.innerHTML = `
+    ${photoHtml}
 
-            ${
-              profile.seeking
-              ? `<span class="tag">Seeking: ${escapeHtml(profile.seeking)}</span>`
-              : ""
-            }
+    <div class="card-body">
 
-          </div>
+      <h2 class="name">
+        ${escapeHtml(profile.display_name || "Member")}
+        ${profile.age ? ", " + escapeHtml(profile.age) : ""}
+      </h2>
 
-          <div class="bio">
-            ${escapeHtml(profile.bio || "No bio yet.")}
-          </div>
+      <div class="location">
+        ${escapeHtml(profile.city || "Location private")}
+      </div>
 
-        </div>
-      `;
+      ${verificationHtml}
 
-      grid.appendChild(card);
+      <div class="tags">
 
-    });
+        ${
+          profile.role
+            ? `<span class="tag">${escapeHtml(profile.role)}</span>`
+            : ""
+        }
 
+        ${
+          profile.seeking
+            ? `<span class="tag">Seeking: ${escapeHtml(profile.seeking)}</span>`
+            : ""
+        }
+
+      </div>
+
+      <div class="bio">
+        ${escapeHtml(profile.bio || "No bio yet.")}
+      </div>
+
+    </div>
+  `;
+
+  grid.appendChild(card);
+
+});
   }catch(error){
 
     console.error(error);
