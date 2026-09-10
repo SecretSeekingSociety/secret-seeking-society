@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Secret Seeking Society — Members</title>
+
+<style>
+
+:root{
+  --bg:#080808;
+  --card:#151515;
+  --card2:#1d1d1d;
+  --gold:#d8b56a;
+  --gold2:#f0d79b;
+  --cream:#f7f2e8;
+  --muted:#aaa39a;
+  --line:#302d28;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--cream);
+  font-family:Arial,sans-serif;
+}
+
+nav{
+  min-height:75px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 24px;
+  border-bottom:1px solid var(--line);
+  background:#090909;
+}
+
+.brand{
+  font-family:Georgia,"Times New Roman",serif;
+  letter-spacing:3px;
+  color:var(--gold2);
+  font-size:17px;
+}
+
+.logout{
+  border:1px solid var(--gold);
+  background:transparent;
+  color:var(--gold2);
+  padding:11px 16px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+  padding:50px 20px;
+}
+
+.welcome{
+  text-align:center;
+  margin-bottom:45px;
+}
+
+.eyebrow{
+  color:var(--gold);
+  letter-spacing:4px;
+  font-size:12px;
+  margin-bottom:15px;
+}
+
+h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:48px;
+  font-weight:normal;
+  margin:0 0 15px;
+}
+
+.welcome p{
+  color:var(--muted);
+  line-height:1.6;
+}
+
+.email{
+  color:var(--gold2);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:18px;
+}
+
+.card{
+  border:1px solid var(--line);
+  background:var(--card);
+  padding:28px;
+  min-height:210px;
+}
+
+.card-number{
+  color:var(--gold);
+  font-size:12px;
+  letter-spacing:2px;
+}
+
+.card h2{
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:normal;
+  font-size:28px;
+  margin:18px 0 10px;
+}
+
+.card p{
+  color:var(--muted);
+  line-height:1.6;
+  font-size:14px;
+}
+
+.button{
+  display:inline-block;
+  margin-top:15px;
+  background:var(--gold);
+  color:#111;
+  border:0;
+  padding:13px 18px;
+  font-weight:bold;
+  cursor:pointer;
+  text-decoration:none;
+}
+
+.secondary{
+  background:transparent;
+  border:1px solid var(--gold);
+  color:var(--gold2);
+}
+
+.status{
+  margin-top:35px;
+  padding:20px;
+  border:1px solid var(--line);
+  background:#101010;
+  text-align:center;
+  color:var(--muted);
+}
+
+footer{
+  text-align:center;
+  color:#666;
+  padding:35px 20px;
+  border-top:1px solid var(--line);
+  font-size:12px;
+}
+
+@media(max-width:700px){
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  h1{
+    font-size:40px;
+  }
+
+  .brand{
+    font-size:14px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+
+  <div class="brand">
+    SECRET SEEKING SOCIETY
+  </div>
+
+  <button class="logout" onclick="logout()">
+    SIGN OUT
+  </button>
+
+</nav>
+
+<div class="container">
+
+  <div class="welcome">
+
+    <div class="eyebrow">
+      PRIVATE MEMBERS
+    </div>
+
+    <h1>
+      Welcome to the Society.
+    </h1>
+
+    <p>
+      Signed in as
+      <span class="email" id="memberEmail">
+        Loading...
+      </span>
+    </p>
+
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+
+      <div class="card-number">01</div>
+
+      <h2>Create your profile</h2>
+
+      <p>
+        Tell the Society who you are, what you're looking for,
+        and what kind of connection interests you.
+      </p>
+
+      <button class="button" onclick="profileComingSoon()">
+        BUILD PROFILE
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="card-number">02</div>
+
+      <h2>Discover members</h2>
+
+      <p>
+        Browse private member profiles and discover people
+        looking for compatible connections.
+      </p>
+
+      <button class="button secondary" onclick="browseComingSoon()">
+        DISCOVER
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="card-number">03</div>
+
+      <h2>Connections</h2>
+
+      <p>
+        Your likes, matches, and private connections will
+        appear here.
+      </p>
+
+      <button class="button secondary" onclick="connectionsComingSoon()">
+        VIEW CONNECTIONS
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="card-number">04</div>
+
+      <h2>Messages</h2>
+
+      <p>
+        Private member-to-member messaging will live here.
+      </p>
+
+      <button class="button secondary" onclick="messagesComingSoon()">
+        MESSAGES
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="status">
+    Members must be 18+. Respect, privacy, consent, and discretion are required.
+  </div>
+
+</div>
+
+<footer>
+  © 2026 Secret Seeking Society
+</footer>
+
+<script>
+
+const SUPABASE_URL =
+  "https://pigbotwyalzrozvulsfh.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_pwHrihWM8OydQ4KFy01dnw_JTaQS7Pj";
+
+async function checkLogin(){
+
+  const token =
+    localStorage.getItem("sss_access_token");
+
+  if(!token){
+
+    window.location.href = "auth.html";
+    return;
+
+  }
+
+  try{
+
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/user",
+      {
+        headers:{
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+
+    if(!response.ok){
+
+      localStorage.removeItem("sss_access_token");
+      localStorage.removeItem("sss_user");
+
+      window.location.href = "auth.html";
+      return;
+
+    }
+
+    const user = await response.json();
+
+    document.getElementById(
+      "memberEmail"
+    ).textContent = user.email || "Member";
+
+  }catch(error){
+
+    console.error(error);
+
+    window.location.href = "auth.html";
+
+  }
+
+}
+
+function logout(){
+
+  localStorage.removeItem("sss_access_token");
+  localStorage.removeItem("sss_user");
+
+  window.location.href = "auth.html";
+
+}
+
+function profileComingSoon(){
+  alert("Your profile builder is the next feature we're adding.");
+}
+
+function browseComingSoon(){
+  alert("Member discovery is coming next.");
+}
+
+function connectionsComingSoon(){
+  alert("Your connections area is coming soon.");
+}
+
+function messagesComingSoon(){
+  alert("Private messaging is coming soon.");
+}
+
+checkLogin();
+
+</script>
+
+</body>
+</html>
