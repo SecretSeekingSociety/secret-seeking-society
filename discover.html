@@ -338,34 +338,27 @@ async function loadProfiles(){
     "10m+": "Verified Net Worth — $10M+"
   };
 
-  const verificationHtml = `
-    <div class="tags">
+let verificationHtml = '<div class="tags">';
 
-      ${
-        profile.selfie_verified
-          ? `<span class="tag">✓ Selfie Verified</span>`
-          : ""
-      }
+if (profile.selfie_verified) {
+  verificationHtml += '<span class="tag">✓ Selfie Verified</span>';
+}
 
-      ${
-        profile.income_verified && profile.income_tier
-          ? `<span class="tag">💰 ${escapeHtml(
-              incomeLabels[profile.income_tier] || "Income Verified"
-            )}</span>`
-          : ""
-      }
+if (profile.income_verified && profile.income_tier) {
+  verificationHtml +=
+    '<span class="tag">💰 ' +
+    escapeHtml(incomeLabels[profile.income_tier] || "Income Verified") +
+    '</span>';
+}
 
-      ${
-        profile.net_worth_verified && profile.net_worth_tier
-          ? `<span class="tag">💎 ${escapeHtml(
-              netWorthLabels[profile.net_worth_tier] || "Net Worth Verified"
-            )}</span>`
-          : ""
-      }
+if (profile.net_worth_verified && profile.net_worth_tier) {
+  verificationHtml +=
+    '<span class="tag">💎 ' +
+    escapeHtml(netWorthLabels[profile.net_worth_tier] || "Net Worth Verified") +
+    '</span>';
+}
 
-    </div>
-  `;
-
+verificationHtml += '</div>';
   card.innerHTML = `
     ${photoHtml}
 
