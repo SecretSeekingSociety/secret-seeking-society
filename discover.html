@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Secret Seeking Society — Discover</title>
+
+<style>
+
+:root{
+  --bg:#080808;
+  --card:#151515;
+  --gold:#d8b56a;
+  --gold2:#f0d79b;
+  --cream:#f7f2e8;
+  --muted:#aaa39a;
+  --line:#302d28;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--cream);
+  font-family:Arial,sans-serif;
+}
+
+nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 22px;
+  border-bottom:1px solid var(--line);
+  background:#090909;
+}
+
+.brand{
+  font-family:Georgia,"Times New Roman",serif;
+  color:var(--gold2);
+  letter-spacing:3px;
+  font-size:16px;
+}
+
+.back{
+  color:var(--gold2);
+  text-decoration:none;
+  font-size:14px;
+}
+
+.wrap{
+  max-width:1100px;
+  margin:auto;
+  padding:40px 20px 70px;
+}
+
+.header{
+  text-align:center;
+  margin-bottom:35px;
+}
+
+.eyebrow{
+  color:var(--gold);
+  letter-spacing:4px;
+  font-size:12px;
+  margin-bottom:12px;
+}
+
+h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:48px;
+  font-weight:normal;
+  margin:0 0 12px;
+}
+
+.header p{
+  color:var(--muted);
+  line-height:1.6;
+  margin:0;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  overflow:hidden;
+}
+
+.photo{
+  width:100%;
+  aspect-ratio:4/5;
+  object-fit:cover;
+  display:block;
+  background:#0b0b0b;
+}
+
+.no-photo{
+  width:100%;
+  aspect-ratio:4/5;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0b0b0b;
+  color:#6f685f;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:22px;
+}
+
+.card-body{
+  padding:22px;
+}
+
+.name{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:30px;
+  margin:0 0 8px;
+}
+
+.location{
+  color:var(--gold2);
+  font-size:14px;
+  margin-bottom:16px;
+}
+
+.tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:16px;
+}
+
+.tag{
+  border:1px solid #4a4338;
+  color:#d4ccc0;
+  padding:7px 9px;
+  font-size:12px;
+}
+
+.bio{
+  color:var(--muted);
+  line-height:1.6;
+  font-size:14px;
+}
+
+.status{
+  text-align:center;
+  color:var(--muted);
+  padding:40px 10px;
+}
+
+@media(max-width:850px){
+  .grid{
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:600px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  h1{
+    font-size:40px;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+
+  <div class="brand">
+    SECRET SEEKING SOCIETY
+  </div>
+
+  <a class="back" href="member.html">
+    ← MEMBERS
+  </a>
+
+</nav>
+
+<div class="wrap">
+
+  <div class="header">
+
+    <div class="eyebrow">
+      PRIVATE DISCOVERY
+    </div>
+
+    <h1>
+      Discover members.
+    </h1>
+
+    <p>
+      Browse profiles from members of the Society.
+    </p>
+
+  </div>
+
+  <div id="status" class="status">
+    Loading members...
+  </div>
+
+  <div id="memberGrid" class="grid"></div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+  "https://pigbotwyalzrozvulsfh.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_pwHrihWM8OydQ4KFy01dnw_JTaQS7Pj";
+
+const token =
+  localStorage.getItem("sss_access_token");
+
+if(!token){
+  window.location.href = "auth.html";
+}
+
+function escapeHtml(value){
+
+  return String(value || "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+async function checkUser(){
+
+  const response = await fetch(
+    SUPABASE_URL + "/auth/v1/user",
+    {
+      headers:{
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + token
+      }
+    }
+  );
+
+  if(!response.ok){
+
+    localStorage.removeItem("sss_access_token");
+    localStorage.removeItem("sss_user");
+
+    window.location.href = "auth.html";
+    return;
+  }
+
+  loadProfiles();
+}
+
+async function loadProfiles(){
+
+  const status = document.getElementById("status");
+  const grid = document.getElementById("memberGrid");
+
+  try{
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/profiles?select=display_name,age,city,role,seeking,bio,photo_url&order=created_at.desc",
+      {
+        headers:{
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + token
+        }
+      }
+    );
+
+    if(!response.ok){
+
+      const errorText = await response.text();
+      console.error(errorText);
+
+      status.textContent =
+        "Could not load members.";
+      return;
+    }
+
+    const profiles = await response.json();
+
+    if(!Array.isArray(profiles) || profiles.length === 0){
+
+      status.textContent =
+        "No member profiles have been created yet.";
+      return;
+    }
+
+    status.style.display = "none";
+    grid.innerHTML = "";
+
+    profiles.forEach(profile => {
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const photoHtml = profile.photo_url
+        ? `
+          <img
+            class="photo"
+            src="${escapeHtml(profile.photo_url)}"
+            alt="${escapeHtml(profile.display_name || "Member")}"
+          >
+        `
+        : `
+          <div class="no-photo">
+            PRIVATE MEMBER
+          </div>
+        `;
+
+      card.innerHTML = `
+        ${photoHtml}
+
+        <div class="card-body">
+
+          <h2 class="name">
+            ${escapeHtml(profile.display_name || "Member")}
+            ${profile.age ? ", " + escapeHtml(profile.age) : ""}
+          </h2>
+
+          <div class="location">
+            ${escapeHtml(profile.city || "Location private")}
+          </div>
+
+          <div class="tags">
+
+            ${
+              profile.role
+              ? `<span class="tag">${escapeHtml(profile.role)}</span>`
+              : ""
+            }
+
+            ${
+              profile.seeking
+              ? `<span class="tag">Seeking: ${escapeHtml(profile.seeking)}</span>`
+              : ""
+            }
+
+          </div>
+
+          <div class="bio">
+            ${escapeHtml(profile.bio || "No bio yet.")}
+          </div>
+
+        </div>
+      `;
+
+      grid.appendChild(card);
+
+    });
+
+  }catch(error){
+
+    console.error(error);
+
+    status.textContent =
+      "Could not load members.";
+  }
+}
+
+checkUser();
+
+</script>
+
+</body>
+</html>
