@@ -236,9 +236,12 @@ document.getElementById("authForm").addEventListener("submit", async function(ev
   message.textContent = "Please wait...";
 
   const endpoint =
-    mode === "signup"
-      ? "/auth/v1/signup"
-      : "/auth/v1/token?grant_type=password";
+
+  mode === "signup"
+
+    ? "/auth/v1/signup?redirect_to=https%3A%2F%2Fsecretseekingsociety.github.io%2Fsecret-seeking-society%2Fauth.html"
+
+    : "/auth/v1/token?grant_type=password";
 
   try {
 
