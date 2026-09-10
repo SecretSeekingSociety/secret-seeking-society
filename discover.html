@@ -274,7 +274,7 @@ async function loadProfiles(){
 
     const response = await fetch(
       SUPABASE_URL +
-"/rest/v1/profiles?select=display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier&order=created_at.desc"
+"/rest/v1/profiles?select=display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier&order=created_at.desc",
       {
         headers:{
           "apikey": SUPABASE_KEY,
