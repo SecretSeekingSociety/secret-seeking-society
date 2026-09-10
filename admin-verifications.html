@@ -1,0 +1,133 @@
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade
+);
+
+alter table public.admin_users enable row level security;
+
+-- Add YOUR account as the admin.
+insert into public.admin_users (user_id)
+select id
+from auth.users
+where email = 'toniaparis77@gmail.com'
+on conflict (user_id) do nothing;
+
+-- Admin can read verification requests.
+create policy "Admins can view verification requests"
+on public.verification_requests
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+-- Admin can update pending requests.
+create policy "Admins can update verification requests"
+on public.verification_requests
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+-- Admin can privately view uploaded verification documents.
+create policy "Admins can view verification documents"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'verification-documents'
+  and exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+-- Secure approval function.
+create or replace function public.review_verification_request(
+  request_id bigint,
+  decision text,
+  approved_tier text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  req public.verification_requests;
+begin
+
+  if not exists (
+    select 1
+    from public.admin_users
+    where user_id = auth.uid()
+  ) then
+    raise exception 'Not authorized';
+  end if;
+
+  if decision not in ('approved', 'rejected') then
+    raise exception 'Invalid decision';
+  end if;
+
+  select *
+  into req
+  from public.verification_requests
+  where id = request_id;
+
+  if req.id is null then
+    raise exception 'Request not found';
+  end if;
+
+  update public.verification_requests
+  set
+    status = decision,
+    reviewed_at = now()
+  where id = request_id;
+
+  if decision = 'approved' then
+
+    if req.verification_type = 'selfie' then
+      update public.profiles
+      set selfie_verified = true
+      where user_id = req.user_id;
+
+    elsif req.verification_type = 'income' then
+      update public.profiles
+      set
+        income_verified = true,
+        income_tier = approved_tier
+      where user_id = req.user_id;
+
+    elsif req.verification_type = 'net_worth' then
+      update public.profiles
+      set
+        net_worth_verified = true,
+        net_worth_tier = approved_tier
+      where user_id = req.user_id;
+
+    end if;
+
+  end if;
+
+end;
+$$;
+
+grant execute
+on function public.review_verification_request(bigint, text, text)
+to authenticated;
