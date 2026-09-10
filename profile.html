@@ -173,9 +173,16 @@ button{
     <label for="bio">About Me</label>
     <textarea id="bio" placeholder="Tell members about yourself..."></textarea>
 
-    <label for="photoUrl">Profile Photo URL</label>
-    <input id="photoUrl" type="url" placeholder="https://...">
+<label for="photoFile">Profile Photo</label>
+<input id="photoFile" type="file" accept="image/*">
 
+<div id="photoPreviewWrap" style="display:none; margin-bottom:18px;">
+  <img
+    id="photoPreview"
+    alt="Profile preview"
+    style="width:160px;height:160px;object-fit:cover;border:1px solid #37332d;"
+  >
+</div>
     <button type="submit">SAVE PROFILE</button>
 
     <div class="message" id="message"></div>
@@ -196,7 +203,7 @@ if(!token){
 }
 
 let currentUser = null;
-
+let currentPhotoUrl = "";
 async function getUser(){
 
   const response = await fetch(
@@ -240,7 +247,7 @@ async function loadProfile(){
   if(Array.isArray(rows) && rows.length > 0){
 
     const profile = rows[0];
-
+currentPhotoUrl = profile.photo_url || "";
     document.getElementById("displayName").value = profile.display_name || "";
     document.getElementById("age").value = profile.age || "";
     document.getElementById("gender").value = profile.gender || "";
@@ -248,10 +255,47 @@ async function loadProfile(){
     document.getElementById("city").value = profile.city || "";
     document.getElementById("seeking").value = profile.seeking || "";
     document.getElementById("bio").value = profile.bio || "";
-    document.getElementById("photoUrl").value = profile.photo_url || "";
+   if(profile.photo_url){
+  document.getElementById("photoPreview").src = profile.photo_url;
+  document.getElementById("photoPreviewWrap").style.display = "block";
+}
   }
 }
+async function uploadProfilePhoto(){
 
+  const fileInput = document.getElementById("photoFile");
+  const file = fileInput.files[0];
+
+  if(!file){
+    return currentPhotoUrl;
+  }
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const filePath = currentUser.id + "/" + Date.now() + "-" + safeName;
+
+  const response = await fetch(
+    SUPABASE_URL + "/storage/v1/object/profile-photos/" + filePath,
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + token,
+        "Content-Type": file.type
+      },
+      body: file
+    }
+  );
+
+  if(!response.ok){
+    const errorText = await response.text();
+    console.error(errorText);
+    throw new Error("Photo upload failed");
+  }
+
+  return SUPABASE_URL +
+    "/storage/v1/object/public/profile-photos/" +
+    filePath;
+}
 document.getElementById("profileForm").addEventListener("submit", async function(event){
 
   event.preventDefault();
@@ -259,7 +303,15 @@ document.getElementById("profileForm").addEventListener("submit", async function
   const message = document.getElementById("message");
 
   message.textContent = "Saving...";
+let photoUrl = currentPhotoUrl;
 
+try {
+  photoUrl = await uploadProfilePhoto();
+} catch (error) {
+  console.error(error);
+  message.textContent = "Photo upload failed. Please try again.";
+  return;
+}
   const profileData = {
     user_id: currentUser.id,
     display_name: document.getElementById("displayName").value.trim(),
@@ -269,7 +321,7 @@ document.getElementById("profileForm").addEventListener("submit", async function
     city: document.getElementById("city").value.trim(),
     seeking: document.getElementById("seeking").value,
     bio: document.getElementById("bio").value.trim(),
-    photo_url: document.getElementById("photoUrl").value.trim(),
+    photo_url: photoUrl,
     updated_at: new Date().toISOString()
   };
 
