@@ -283,6 +283,7 @@ document.getElementById("authForm").addEventListener("submit", async function(ev
         "sss_user",
         JSON.stringify(data.user || {})
       );
+      window.location.href = "member.html";
     }
 
   } catch(error){
