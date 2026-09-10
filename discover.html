@@ -274,7 +274,7 @@ async function loadProfiles(){
 
     const response = await fetch(
       SUPABASE_URL +
-      "/rest/v1/profiles?select=display_name,age,city,role,seeking,bio,photo_url&order=created_at.desc",
+"/rest/v1/profiles?select=display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier&order=created_at.desc"
       {
         headers:{
           "apikey": SUPABASE_KEY,
@@ -323,7 +323,41 @@ async function loadProfiles(){
             PRIVATE MEMBER
           </div>
         `;
+const incomeLabels = {
+  "50k-99k": "Verified Income — $50K–$99K",
+  "100k-249k": "Verified Income — Six-Figure Earner",
+  "250k-499k": "Verified Income — High Earner",
+  "500k+": "Verified Income — $500K+"
+};
 
+const netWorthLabels = {
+  "under-1m": "Verified Net Worth — Under $1M",
+  "1m-5m": "Verified Net Worth — Millionaire",
+  "5m-10m": "Verified Net Worth — Multi-Millionaire",
+  "10m+": "Verified Net Worth — $10M+"
+};
+
+const verificationHtml = `
+  <div class="tags">
+    ${
+      profile.selfie_verified
+        ? `<span class="tag">✓ Selfie Verified</span>`
+        : ""
+    }
+
+    ${
+      profile.income_verified && profile.income_tier
+        ? `<span class="tag">💰 ${escapeHtml(incomeLabels[profile.income_tier] || "Income Verified")}</span>`
+        : ""
+    }
+
+    ${
+      profile.net_worth_verified && profile.net_worth_tier
+        ? `<span class="tag">💎 ${escapeHtml(netWorthLabels[profile.net_worth_tier] || "Net Worth Verified")}</span>`
+        : ""
+    }
+  </div>
+`;
       card.innerHTML = `
         ${photoHtml}
 
@@ -337,7 +371,7 @@ async function loadProfiles(){
           <div class="location">
             ${escapeHtml(profile.city || "Location private")}
           </div>
-
+${verificationHtml}
           <div class="tags">
 
             ${
