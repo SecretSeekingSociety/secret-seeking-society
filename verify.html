@@ -391,7 +391,127 @@ async function submitSelfieVerification(){
       "Something went wrong. Please try again.";
   }
 }
+async function submitIncomeVerification(){
 
+  const message =
+    document.getElementById("incomeMessage");
+
+  const tier =
+    document.getElementById("incomeTier").value;
+
+  const file =
+    document.getElementById("incomeFile").files[0];
+
+  if(!tier){
+    message.textContent = "Choose your income range first.";
+    return;
+  }
+
+  if(!file){
+    message.textContent = "Choose your proof of income first.";
+    return;
+  }
+
+  message.textContent = "Submitting income verification...";
+
+  try{
+
+    const user =
+      await getCurrentUser();
+
+    if(!user){
+      return;
+    }
+
+    const extension =
+      file.name.split(".").pop() || "jpg";
+
+    const filePath =
+      user.id +
+      "/income/" +
+      Date.now() +
+      "." +
+      extension;
+
+    const uploadResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/storage/v1/object/verification-documents/" +
+        filePath,
+        {
+          method:"POST",
+          headers:{
+            "apikey":SUPABASE_KEY,
+            "Authorization":"Bearer " + token,
+            "Content-Type":file.type,
+            "x-upsert":"false"
+          },
+          body:file
+        }
+      );
+
+    if(!uploadResponse.ok){
+
+      const errorText =
+        await uploadResponse.text();
+
+      console.error(errorText);
+
+      message.textContent =
+        "Income document upload failed.";
+
+      return;
+    }
+
+    const requestResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/verification_requests",
+        {
+          method:"POST",
+          headers:{
+            "apikey":SUPABASE_KEY,
+            "Authorization":"Bearer " + token,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({
+            user_id:user.id,
+            verification_type:"income",
+            document_path:filePath,
+            requested_tier:tier,
+            status:"pending"
+          })
+        }
+      );
+
+    if(!requestResponse.ok){
+
+      const errorText =
+        await requestResponse.text();
+
+      console.error(errorText);
+
+      message.textContent =
+        "Could not create income verification request.";
+
+      return;
+    }
+
+    message.textContent =
+      "Income verification submitted successfully. Status: Pending";
+
+    document.getElementById("incomeFile").value = "";
+    document.getElementById("incomeTier").value = "";
+
+  }catch(error){
+
+    console.error(error);
+
+    message.textContent =
+      "Something went wrong. Please try again.";
+  }
+}
 </script>
 
 </body>
