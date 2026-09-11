@@ -226,15 +226,38 @@ button{
 </div>
 
   <div class="card">
-    <h2>💎 Net Worth Verification</h2>
+    
+  <h2>💎 Net Worth Verification</h2>
 
-    <p>
-      Net worth verification will display only an approved range such as
-      Millionaire or Multi-Millionaire.
-    </p>
+  <p>
+    Verify your net worth privately. Only your approved net worth range
+    will appear on your profile — never your exact net worth.
+  </p>
 
-    <div class="status">COMING NEXT</div>
-  </div>
+  <label for="netWorthTier">Net worth range</label>
+
+  <select id="netWorthTier">
+    <option value="">Choose your net worth range</option>
+    <option value="under-1m">Under $1M</option>
+    <option value="1m-5m">$1M–$5M</option>
+    <option value="5m-10m">$5M–$10M</option>
+    <option value="10m+">$10M+</option>
+  </select>
+
+  <label for="netWorthFile">Upload proof of net worth</label>
+
+  <input
+    type="file"
+    id="netWorthFile"
+    accept="image/*,.pdf"
+  >
+
+  <button onclick="submitNetWorthVerification()">
+    SUBMIT NET WORTH VERIFICATION
+  </button>
+
+  <div id="netWorthMessage" class="message"></div>
+</div>
 
   <p class="small">
     Do not upload documents containing passwords, PINs, full card numbers, or
@@ -503,6 +526,127 @@ async function submitIncomeVerification(){
 
     document.getElementById("incomeFile").value = "";
     document.getElementById("incomeTier").value = "";
+
+  }catch(error){
+
+    console.error(error);
+
+    message.textContent =
+      "Something went wrong. Please try again.";
+  }
+}
+async function submitNetWorthVerification(){
+
+  const message =
+    document.getElementById("netWorthMessage");
+
+  const tier =
+    document.getElementById("netWorthTier").value;
+
+  const file =
+    document.getElementById("netWorthFile").files[0];
+
+  if(!tier){
+    message.textContent = "Choose your net worth range first.";
+    return;
+  }
+
+  if(!file){
+    message.textContent = "Choose your proof of net worth first.";
+    return;
+  }
+
+  message.textContent = "Submitting net worth verification...";
+
+  try{
+
+    const user =
+      await getCurrentUser();
+
+    if(!user){
+      return;
+    }
+
+    const extension =
+      file.name.split(".").pop() || "jpg";
+
+    const filePath =
+      user.id +
+      "/net_worth/" +
+      Date.now() +
+      "." +
+      extension;
+
+    const uploadResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/storage/v1/object/verification-documents/" +
+        filePath,
+        {
+          method:"POST",
+          headers:{
+            "apikey":SUPABASE_KEY,
+            "Authorization":"Bearer " + token,
+            "Content-Type":file.type,
+            "x-upsert":"false"
+          },
+          body:file
+        }
+      );
+
+    if(!uploadResponse.ok){
+
+      const errorText =
+        await uploadResponse.text();
+
+      console.error(errorText);
+
+      message.textContent =
+        "Net worth document upload failed.";
+
+      return;
+    }
+
+    const requestResponse =
+      await fetch(
+        SUPABASE_URL +
+        "/rest/v1/verification_requests",
+        {
+          method:"POST",
+          headers:{
+            "apikey":SUPABASE_KEY,
+            "Authorization":"Bearer " + token,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({
+            user_id:user.id,
+            verification_type:"net_worth",
+            document_path:filePath,
+            requested_tier:tier,
+            status:"pending"
+          })
+        }
+      );
+
+    if(!requestResponse.ok){
+
+      const errorText =
+        await requestResponse.text();
+
+      console.error(errorText);
+
+      message.textContent =
+        "Could not create net worth verification request.";
+
+      return;
+    }
+
+    message.textContent =
+      "Net worth verification submitted successfully. Status: Pending";
+
+    document.getElementById("netWorthFile").value = "";
+    document.getElementById("netWorthTier").value = "";
 
   }catch(error){
 
