@@ -1,133 +1,391 @@
-create table if not exists public.admin_users (
-  user_id uuid primary key references auth.users(id) on delete cascade
-);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secret Seeking Society — Admin Verifications</title>
 
-alter table public.admin_users enable row level security;
+<style>
+:root{
+  --bg:#080808;
+  --card:#151515;
+  --gold:#d8b56a;
+  --gold2:#f0d79b;
+  --cream:#f7f2e8;
+  --muted:#aaa39a;
+  --line:#302d28;
+  --red:#c96b6b;
+}
 
--- Add YOUR account as the admin.
-insert into public.admin_users (user_id)
-select id
-from auth.users
-where email = 'toniaparis77@gmail.com'
-on conflict (user_id) do nothing;
+*{box-sizing:border-box;}
 
--- Admin can read verification requests.
-create policy "Admins can view verification requests"
-on public.verification_requests
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.admin_users
-    where admin_users.user_id = auth.uid()
-  )
-);
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--cream);
+  font-family:Arial,sans-serif;
+}
 
--- Admin can update pending requests.
-create policy "Admins can update verification requests"
-on public.verification_requests
-for update
-to authenticated
-using (
-  exists (
-    select 1
-    from public.admin_users
-    where admin_users.user_id = auth.uid()
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.admin_users
-    where admin_users.user_id = auth.uid()
-  )
-);
+nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px;
+  border-bottom:1px solid var(--line);
+}
 
--- Admin can privately view uploaded verification documents.
-create policy "Admins can view verification documents"
-on storage.objects
-for select
-to authenticated
-using (
-  bucket_id = 'verification-documents'
-  and exists (
-    select 1
-    from public.admin_users
-    where admin_users.user_id = auth.uid()
-  )
-);
+.brand{
+  color:var(--gold2);
+  font-family:Georgia,serif;
+  letter-spacing:3px;
+}
 
--- Secure approval function.
-create or replace function public.review_verification_request(
-  request_id bigint,
-  decision text,
-  approved_tier text default null
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  req public.verification_requests;
-begin
+.back{
+  color:var(--gold2);
+  text-decoration:none;
+}
 
-  if not exists (
-    select 1
-    from public.admin_users
-    where user_id = auth.uid()
-  ) then
-    raise exception 'Not authorized';
-  end if;
+.wrap{
+  max-width:850px;
+  margin:auto;
+  padding:40px 20px 70px;
+}
 
-  if decision not in ('approved', 'rejected') then
-    raise exception 'Invalid decision';
-  end if;
+.eyebrow{
+  color:var(--gold);
+  letter-spacing:4px;
+  font-size:12px;
+}
 
-  select *
-  into req
-  from public.verification_requests
-  where id = request_id;
+h1{
+  font-family:Georgia,serif;
+  font-size:44px;
+  font-weight:normal;
+  margin:12px 0;
+}
 
-  if req.id is null then
-    raise exception 'Request not found';
-  end if;
+.intro{
+  color:var(--muted);
+  line-height:1.6;
+  margin-bottom:30px;
+}
 
-  update public.verification_requests
-  set
-    status = decision,
-    reviewed_at = now()
-  where id = request_id;
+.request{
+  background:var(--card);
+  border:1px solid var(--line);
+  padding:20px;
+  margin-bottom:20px;
+}
 
-  if decision = 'approved' then
+.request h2{
+  font-family:Georgia,serif;
+  font-weight:normal;
+  font-size:28px;
+}
 
-    if req.verification_type = 'selfie' then
-      update public.profiles
-      set selfie_verified = true
-      where user_id = req.user_id;
+.meta{
+  color:var(--muted);
+  line-height:1.7;
+  font-size:14px;
+}
 
-    elsif req.verification_type = 'income' then
-      update public.profiles
-      set
-        income_verified = true,
-        income_tier = approved_tier
-      where user_id = req.user_id;
+.preview{
+  width:100%;
+  max-height:500px;
+  object-fit:contain;
+  background:#050505;
+  border:1px solid var(--line);
+  margin:15px 0;
+}
 
-    elsif req.verification_type = 'net_worth' then
-      update public.profiles
-      set
-        net_worth_verified = true,
-        net_worth_tier = approved_tier
-      where user_id = req.user_id;
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
 
-    end if;
+button{
+  padding:15px;
+  font-weight:bold;
+  letter-spacing:1px;
+  cursor:pointer;
+}
 
-  end if;
+.approve{
+  border:0;
+  background:var(--gold);
+  color:#080808;
+}
 
-end;
-$$;
+.reject{
+  background:transparent;
+  color:var(--gold2);
+  border:1px solid var(--red);
+}
 
-grant execute
-on function public.review_verification_request(bigint, text, text)
-to authenticated;
+.message{
+  margin-top:12px;
+  color:var(--gold2);
+}
+
+.empty{
+  border:1px solid var(--line);
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div class="brand">SECRET SEEKING SOCIETY</div>
+  <a class="back" href="member.html">← MEMBERS</a>
+</nav>
+
+<div class="wrap">
+
+  <div class="eyebrow">ADMIN REVIEW</div>
+
+  <h1>Verification requests.</h1>
+
+  <p class="intro">
+    Review pending member verification submissions.
+    Verification files remain private.
+  </p>
+
+  <div id="requests">
+    <div class="empty">Loading verification requests...</div>
+  </div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+  "https://pigbotwyalzrozvulsfh.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_pwHrihWM8OydQ4KFy01dnw_JTaQS7Pj";
+
+const token =
+  localStorage.getItem("sss_access_token");
+
+if(!token){
+  window.location.href = "auth.html";
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+async function createSignedUrl(path){
+
+  const response = await fetch(
+    SUPABASE_URL +
+    "/storage/v1/object/sign/verification-documents/" +
+    path,
+    {
+      method:"POST",
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        expiresIn:600
+      })
+    }
+  );
+
+  if(!response.ok){
+    console.error(await response.text());
+    return null;
+  }
+
+  const data = await response.json();
+
+  return SUPABASE_URL +
+    "/storage/v1" +
+    data.signedURL;
+}
+
+async function loadRequests(){
+
+  const container =
+    document.getElementById("requests");
+
+  const response = await fetch(
+    SUPABASE_URL +
+    "/rest/v1/verification_requests" +
+    "?status=eq.pending" +
+    "&select=id,user_id,verification_type,document_path,requested_tier,status,created_at" +
+    "&order=created_at.asc",
+    {
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token
+      }
+    }
+  );
+
+  if(!response.ok){
+
+    console.error(await response.text());
+
+    container.innerHTML =
+      '<div class="empty">Could not load verification requests.</div>';
+
+    return;
+  }
+
+  const requests =
+    await response.json();
+
+  if(!Array.isArray(requests) || requests.length === 0){
+
+    container.innerHTML =
+      '<div class="empty">No pending verification requests.</div>';
+
+    return;
+  }
+
+  container.innerHTML = "";
+
+  for(const request of requests){
+
+    const card =
+      document.createElement("div");
+
+    card.className = "request";
+
+    let previewHtml = "";
+
+    if(request.document_path){
+
+      const signedUrl =
+        await createSignedUrl(request.document_path);
+
+      if(signedUrl){
+
+        previewHtml = `
+          <img
+            class="preview"
+            src="${escapeHtml(signedUrl)}"
+            alt="Private verification submission"
+          >
+        `;
+      }
+    }
+
+    card.innerHTML = `
+
+      <h2>
+        ${escapeHtml(request.verification_type)} verification
+      </h2>
+
+      <div class="meta">
+        Request ID: ${escapeHtml(request.id)}<br>
+        User ID: ${escapeHtml(request.user_id)}<br>
+        Submitted:
+        ${escapeHtml(
+          new Date(request.created_at).toLocaleString()
+        )}
+      </div>
+
+      ${previewHtml}
+
+      <div class="actions">
+
+        <button
+          class="approve"
+          onclick="reviewRequest(${request.id}, 'approved')"
+        >
+          APPROVE
+        </button>
+
+        <button
+          class="reject"
+          onclick="reviewRequest(${request.id}, 'rejected')"
+        >
+          REJECT
+        </button>
+
+      </div>
+
+      <div
+        class="message"
+        id="message-${request.id}"
+      ></div>
+    `;
+
+    container.appendChild(card);
+  }
+}
+
+async function reviewRequest(requestId, decision){
+
+  const message =
+    document.getElementById(
+      "message-" + requestId
+    );
+
+  message.textContent =
+    "Saving decision...";
+
+  const response = await fetch(
+    SUPABASE_URL +
+    "/rest/v1/rpc/review_verification_request",
+    {
+      method:"POST",
+
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token,
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        request_id:requestId,
+        decision:decision,
+        approved_tier:null
+      })
+    }
+  );
+
+  if(!response.ok){
+
+    const error =
+      await response.text();
+
+    console.error(error);
+
+    message.textContent =
+      "Could not save decision.";
+
+    return;
+  }
+
+  message.textContent =
+    decision === "approved"
+      ? "✓ Verification approved."
+      : "Verification rejected.";
+
+  setTimeout(
+    loadRequests,
+    700
+  );
+}
+
+loadRequests();
+
+</script>
+
+</body>
+</html>
