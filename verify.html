@@ -191,16 +191,39 @@ button{
     <div id="selfieMessage" class="message"></div>
   </div>
 
-  <div class="card">
-    <h2>💰 Income Verification</h2>
+ <div class="card">
+  <h2>💰 Income Verification</h2>
 
-    <p>
-      Income verification will display only an approved income tier, never your
-      exact income or account balance.
-    </p>
+  <p>
+    Verify your income privately. Only your approved income tier
+    will appear on your profile — never your exact income.
+  </p>
 
-    <div class="status">COMING NEXT</div>
-  </div>
+  <label for="incomeTier">Income range</label>
+
+  <select id="incomeTier">
+    <option value="">Choose your income range</option>
+    <option value="Under $50K">Under $50K</option>
+    <option value="$50K–$99K">$50K–$99K</option>
+    <option value="$100K–$249K">$100K–$249K</option>
+    <option value="$250K–$499K">$250K–$499K</option>
+    <option value="$500K+">$500K+</option>
+  </select>
+
+  <label for="incomeFile">Upload proof of income</label>
+
+  <input
+    type="file"
+    id="incomeFile"
+    accept="image/*,.pdf"
+  >
+
+  <button onclick="submitIncomeVerification()">
+    SUBMIT INCOME VERIFICATION
+  </button>
+
+  <div id="incomeMessage" class="message"></div>
+</div>
 
   <div class="card">
     <h2>💎 Net Worth Verification</h2>
