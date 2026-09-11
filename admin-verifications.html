@@ -337,7 +337,7 @@ async function loadRequests(){
       document.createElement("div");
 
     card.className = "request";
-
+    card.dataset.tier = request.requested_tier || "";
     let previewHtml = "";
 
     if(request.document_path){
@@ -373,7 +373,9 @@ async function loadRequests(){
         User ID: ${escapeHtml(request.user_id)}<br>
         Status: ${escapeHtml(request.status)}<br>
         ${request.requested_tier
-  ? `Requested income tier: ${escapeHtml(request.requested_tier)}<br>`
+  ? `${request.verification_type === "net_worth"
+      ? "Requested net worth tier"
+      : "Requested income tier"}: ${escapeHtml(request.requested_tier)}<br>`
   : ""}
   Submitted:
         ${escapeHtml(
@@ -434,7 +436,12 @@ async function reviewRequest(requestId, decision){
       body:JSON.stringify({
         request_id:requestId,
         decision:decision,
-        approved_tier:null
+        approved_tier:
+  decision === "approved"
+    ? document
+        .querySelector(`[data-tier="${requestId}"]`)
+        ?.dataset.tier || null
+    : null
       })
     }
   );
