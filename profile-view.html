@@ -204,7 +204,7 @@ async function loadProfile(){
     SUPABASE_URL +
     "/rest/v1/profiles?user_id=eq." +
     encodeURIComponent(userId) +
-    "&select=user_id,display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier",
+    "&select=user_id,display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier,kinks",
     {
       headers:{
         "apikey":SUPABASE_KEY,
@@ -308,10 +308,14 @@ async function loadProfile(){
           </div>
         </div>
 
-        <div class="section" id="fetishSection" style="display:none;">
-          <div class="section-title">Fetishes & Kinks</div>
-          <div class="text" id="fetishText"></div>
-        </div>
+        ${profile.kinks ? `
+  <div class="section">
+    <div class="section-title">Fetishes & Kinks</div>
+    <div class="text">
+      ${escapeHtml(profile.kinks)}
+    </div>
+  </div>
+` : ""}
 
       </div>
 
