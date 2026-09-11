@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Secret Seeking Society — Member Profile</title>
+
+<style>
+:root{
+  --bg:#080808;
+  --card:#151515;
+  --gold:#d8b56a;
+  --gold2:#f0d79b;
+  --cream:#f7f2e8;
+  --muted:#aaa39a;
+  --line:#302d28;
+}
+
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--cream);
+  font-family:Arial,sans-serif;
+}
+
+nav{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 22px;
+  border-bottom:1px solid var(--line);
+}
+
+.brand{
+  font-family:Georgia,"Times New Roman",serif;
+  color:var(--gold2);
+  letter-spacing:3px;
+}
+
+.back{
+  color:var(--gold2);
+  text-decoration:none;
+}
+
+.wrap{
+  max-width:700px;
+  margin:auto;
+  padding:30px 20px 70px;
+}
+
+.profile{
+  background:var(--card);
+  border:1px solid var(--line);
+  overflow:hidden;
+}
+
+.photo{
+  width:100%;
+  max-height:700px;
+  object-fit:cover;
+  display:block;
+}
+
+.no-photo{
+  height:420px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--muted);
+  background:#0b0b0b;
+}
+
+.content{
+  padding:26px;
+}
+
+h1{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:42px;
+  font-weight:normal;
+  margin:0 0 8px;
+}
+
+.location{
+  color:var(--gold2);
+  margin-bottom:20px;
+}
+
+.tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:15px 0;
+}
+
+.tag{
+  border:1px solid #4a443a;
+  padding:10px 12px;
+  font-size:14px;
+}
+
+.section{
+  border-top:1px solid var(--line);
+  padding-top:20px;
+  margin-top:22px;
+}
+
+.section-title{
+  color:var(--gold2);
+  font-size:13px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.text{
+  color:#d4cdc3;
+  line-height:1.7;
+  white-space:pre-wrap;
+}
+
+.status{
+  padding:30px;
+  text-align:center;
+  color:var(--muted);
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div class="brand">SECRET SEEKING SOCIETY</div>
+  <a class="back" href="discover.html">← DISCOVER</a>
+</nav>
+
+<div class="wrap">
+
+  <div id="profile">
+    <div class="status">Loading profile...</div>
+  </div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+  "https://pigbotwyalzrozvulsfh.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_pwHrihWM8OydQ4KFy01dnw_JTaQS7Pj";
+
+const token =
+  localStorage.getItem("sss_access_token");
+
+if(!token){
+  window.location.href = "auth.html";
+}
+
+const container =
+  document.getElementById("profile");
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+const incomeLabels = {
+  "50k-99k":"Verified Income — $50K–$99K",
+  "100k-249k":"Verified Income — $100K–$249K",
+  "250k-499k":"Verified Income — $250K–$499K",
+  "500k+":"Verified Income — $500K+"
+};
+
+const netWorthLabels = {
+  "under-1m":"Verified Net Worth — Under $1M",
+  "1m-5m":"Verified Net Worth — $1M–$5M",
+  "5m-10m":"Verified Net Worth — $5M–$10M",
+  "10m+":"Verified Net Worth — $10M+"
+};
+
+async function loadProfile(){
+
+  const params =
+    new URLSearchParams(window.location.search);
+
+  const userId =
+    params.get("user");
+
+  if(!userId){
+    container.innerHTML =
+      '<div class="status">Member profile not found.</div>';
+    return;
+  }
+
+  const response = await fetch(
+    SUPABASE_URL +
+    "/rest/v1/profiles?user_id=eq." +
+    encodeURIComponent(userId) +
+    "&select=user_id,display_name,age,city,role,seeking,bio,photo_url,selfie_verified,income_verified,income_tier,net_worth_verified,net_worth_tier",
+    {
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token
+      }
+    }
+  );
+
+  if(!response.ok){
+    container.innerHTML =
+      '<div class="status">Could not load this profile.</div>';
+    return;
+  }
+
+  const rows =
+    await response.json();
+
+  if(!Array.isArray(rows) || rows.length === 0){
+    container.innerHTML =
+      '<div class="status">Member profile not found.</div>';
+    return;
+  }
+
+  const profile =
+    rows[0];
+
+  let verificationHtml = "";
+
+  if(profile.selfie_verified){
+    verificationHtml +=
+      '<span class="tag">✓ Selfie Verified</span>';
+  }
+
+  if(profile.income_verified && profile.income_tier){
+    verificationHtml +=
+      '<span class="tag">💰 ' +
+      escapeHtml(
+        incomeLabels[profile.income_tier] ||
+        "Income Verified"
+      ) +
+      '</span>';
+  }
+
+  if(profile.net_worth_verified && profile.net_worth_tier){
+    verificationHtml +=
+      '<span class="tag">💎 ' +
+      escapeHtml(
+        netWorthLabels[profile.net_worth_tier] ||
+        "Net Worth Verified"
+      ) +
+      '</span>';
+  }
+
+  const photoHtml =
+    profile.photo_url
+      ? `<img class="photo"
+          src="${escapeHtml(profile.photo_url)}"
+          alt="${escapeHtml(profile.display_name || "Member")}">`
+      : '<div class="no-photo">PRIVATE MEMBER</div>';
+
+  container.innerHTML = `
+    <div class="profile">
+
+      ${photoHtml}
+
+      <div class="content">
+
+        <h1>
+          ${escapeHtml(profile.display_name || "Member")}
+          ${profile.age ? ", " + escapeHtml(profile.age) : ""}
+        </h1>
+
+        <div class="location">
+          ${escapeHtml(profile.city || "Location private")}
+        </div>
+
+        <div class="tags">
+          ${verificationHtml}
+        </div>
+
+        <div class="tags">
+
+          ${
+            profile.role
+              ? `<span class="tag">${escapeHtml(profile.role)}</span>`
+              : ""
+          }
+
+          ${
+            profile.seeking
+              ? `<span class="tag">Seeking: ${escapeHtml(profile.seeking)}</span>`
+              : ""
+          }
+
+        </div>
+
+        <div class="section">
+          <div class="section-title">About Me</div>
+          <div class="text">
+            ${escapeHtml(profile.bio || "No bio yet.")}
+          </div>
+        </div>
+
+        <div class="section" id="fetishSection" style="display:none;">
+          <div class="section-title">Fetishes & Kinks</div>
+          <div class="text" id="fetishText"></div>
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+loadProfile();
+
+</script>
+
+</body>
+</html>
