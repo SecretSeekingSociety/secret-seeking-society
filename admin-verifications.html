@@ -87,6 +87,7 @@ h1{
   color:var(--muted);
   line-height:1.7;
   font-size:14px;
+  word-break:break-word;
 }
 
 .preview{
@@ -133,6 +134,8 @@ button{
   padding:30px;
   text-align:center;
   color:var(--muted);
+  white-space:pre-wrap;
+  word-break:break-word;
 }
 </style>
 </head>
@@ -156,7 +159,7 @@ button{
   </p>
 
   <div id="requests">
-    <div class="empty">Loading verification requests...</div>
+    <div class="empty">Checking admin access...</div>
   </div>
 
 </div>
@@ -172,6 +175,9 @@ const SUPABASE_KEY =
 const token =
   localStorage.getItem("sss_access_token");
 
+const container =
+  document.getElementById("requests");
+
 if(!token){
   window.location.href = "auth.html";
 }
@@ -185,12 +191,64 @@ function escapeHtml(value){
     .replaceAll("'","&#039;");
 }
 
+async function checkUser(){
+
+  const response = await fetch(
+    SUPABASE_URL + "/auth/v1/user",
+    {
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token
+      }
+    }
+  );
+
+  if(!response.ok){
+    localStorage.removeItem("sss_access_token");
+    localStorage.removeItem("sss_user");
+    window.location.href = "auth.html";
+    return null;
+  }
+
+  return await response.json();
+}
+
+async function checkAdmin(){
+
+  const response = await fetch(
+    SUPABASE_URL + "/rest/v1/rpc/is_admin",
+    {
+      method:"POST",
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer " + token,
+        "Content-Type":"application/json"
+      },
+      body:"{}"
+    }
+  );
+
+  if(!response.ok){
+    const errorText = await response.text();
+    throw new Error(
+      "Admin check failed: " + errorText
+    );
+  }
+
+  return await response.json();
+}
+
 async function createSignedUrl(path){
+
+  const encodedPath = path
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
 
   const response = await fetch(
     SUPABASE_URL +
     "/storage/v1/object/sign/verification-documents/" +
-    path,
+    encodedPath,
     {
       method:"POST",
       headers:{
@@ -205,27 +263,37 @@ async function createSignedUrl(path){
   );
 
   if(!response.ok){
-    console.error(await response.text());
+    console.error(
+      "Signed URL error:",
+      await response.text()
+    );
     return null;
   }
 
   const data = await response.json();
 
+  const signedPath =
+    data.signedURL || data.signedUrl;
+
+  if(!signedPath){
+    return null;
+  }
+
   return SUPABASE_URL +
     "/storage/v1" +
-    data.signedURL;
+    signedPath;
 }
 
 async function loadRequests(){
 
-  const container =
-    document.getElementById("requests");
+  container.innerHTML =
+    '<div class="empty">Loading verification requests...</div>';
 
   const response = await fetch(
     SUPABASE_URL +
     "/rest/v1/verification_requests" +
     "?status=eq.pending" +
-    "&select=id,user_id,verification_type,document_path,requested_tier,status,created_at" +
+    "&select=id,user_id,verification_type,document_path,requested_tier,status,created_at,reviewed_at" +
     "&order=created_at.asc",
     {
       headers:{
@@ -237,10 +305,15 @@ async function loadRequests(){
 
   if(!response.ok){
 
-    console.error(await response.text());
+    const errorText =
+      await response.text();
+
+    console.error(errorText);
 
     container.innerHTML =
-      '<div class="empty">Could not load verification requests.</div>';
+      '<div class="empty">Could not load verification requests.\n\n' +
+      escapeHtml(errorText) +
+      '</div>';
 
     return;
   }
@@ -273,13 +346,18 @@ async function loadRequests(){
         await createSignedUrl(request.document_path);
 
       if(signedUrl){
-
         previewHtml = `
           <img
             class="preview"
             src="${escapeHtml(signedUrl)}"
             alt="Private verification submission"
           >
+        `;
+      } else {
+        previewHtml = `
+          <div class="message">
+            Verification file exists, but preview could not be generated.
+          </div>
         `;
       }
     }
@@ -293,6 +371,7 @@ async function loadRequests(){
       <div class="meta">
         Request ID: ${escapeHtml(request.id)}<br>
         User ID: ${escapeHtml(request.user_id)}<br>
+        Status: ${escapeHtml(request.status)}<br>
         Submitted:
         ${escapeHtml(
           new Date(request.created_at).toLocaleString()
@@ -344,13 +423,11 @@ async function reviewRequest(requestId, decision){
     "/rest/v1/rpc/review_verification_request",
     {
       method:"POST",
-
       headers:{
         "apikey":SUPABASE_KEY,
         "Authorization":"Bearer " + token,
         "Content-Type":"application/json"
       },
-
       body:JSON.stringify({
         request_id:requestId,
         decision:decision,
@@ -361,13 +438,14 @@ async function reviewRequest(requestId, decision){
 
   if(!response.ok){
 
-    const error =
+    const errorText =
       await response.text();
 
-    console.error(error);
+    console.error(errorText);
 
     message.textContent =
-      "Could not save decision.";
+      "Could not save decision: " +
+      errorText;
 
     return;
   }
@@ -379,11 +457,46 @@ async function reviewRequest(requestId, decision){
 
   setTimeout(
     loadRequests,
-    700
+    600
   );
 }
 
-loadRequests();
+async function initialize(){
+
+  try{
+
+    const user =
+      await checkUser();
+
+    if(!user){
+      return;
+    }
+
+    const admin =
+      await checkAdmin();
+
+    if(admin !== true){
+
+      container.innerHTML =
+        '<div class="empty">Access denied. This account is not an administrator.</div>';
+
+      return;
+    }
+
+    await loadRequests();
+
+  }catch(error){
+
+    console.error(error);
+
+    container.innerHTML =
+      '<div class="empty">' +
+      escapeHtml(error.message) +
+      '</div>';
+  }
+}
+
+initialize();
 
 </script>
 
