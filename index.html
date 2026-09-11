@@ -901,7 +901,12 @@ footer{
       placeholder="A little about you..."
 
     ></textarea>
+<label for="kinks">Fetishes & Kinks</label>
 
+<textarea
+  id="kinks"
+  placeholder="Tell us what you're into..."
+></textarea>
     <div class="checkbox">
 
       <input id="agree" type="checkbox" required>
@@ -1010,7 +1015,8 @@ async function submitForm(event) {
 
         interest: interest,
 
-        about: about
+        about: about,
+kinks: document.getElementById("kinks").value.trim()
 
       })
 
