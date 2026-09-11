@@ -372,7 +372,10 @@ async function loadRequests(){
         Request ID: ${escapeHtml(request.id)}<br>
         User ID: ${escapeHtml(request.user_id)}<br>
         Status: ${escapeHtml(request.status)}<br>
-        Submitted:
+        ${request.requested_tier
+  ? `Requested income tier: ${escapeHtml(request.requested_tier)}<br>`
+  : ""}
+  Submitted:
         ${escapeHtml(
           new Date(request.created_at).toLocaleString()
         )}
